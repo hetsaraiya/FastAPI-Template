@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSessionTransaction
 from sqlalchemy.pool.base import _ConnectionRecord
 
 from src.repository.database import async_db
-from src.repository.table import Base
+from src.repository.base import Base
 
 
 @event.listens_for(target=async_db.async_engine.sync_engine, identifier="connect")
@@ -30,6 +30,27 @@ async def initialize_db_tables(connection: AsyncConnection) -> None:
 
     await connection.run_sync(Base.metadata.drop_all)
     await connection.run_sync(Base.metadata.create_all)
+    from sqlalchemy import insert
+
+    loguru.logger.info("Database Table Creation --- Successfully Initialized!")
+
+
+    loguru.logger.info("Database Table Creation --- Initializing . . .")
+
+    table_exists = False
+    for table in Base.metadata.sorted_tables:
+        exists = await connection.run_sync(
+            lambda sync_conn: sync_conn.dialect.has_table(sync_conn, table.name)
+        )
+        if exists:
+            table_exists = True
+            break
+
+    if not table_exists:
+        loguru.logger.info("No tables found - Creating tables...")
+        await connection.run_sync(Base.metadata.create_all)
+    else:
+        loguru.logger.info("Tables already exist - Skipping creation")
 
     loguru.logger.info("Database Table Creation --- Successfully Initialized!")
 

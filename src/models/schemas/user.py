@@ -1,7 +1,10 @@
 import datetime
+import enum
+from typing import Optional
 
 import pydantic
 
+from src.models.db.user import UserTypeEnum
 from src.models.schemas.base import BaseSchemaModel
 
 
@@ -9,12 +12,14 @@ class UserInCreate(BaseSchemaModel):
     username: str
     email: pydantic.EmailStr
     password: str
+    user_type: UserTypeEnum = UserTypeEnum.CONSUMER
 
 
 class UserInUpdate(BaseSchemaModel):
-    username: str | None
-    email: str | None
-    password: str | None
+    username: str | None = None
+    email: str | None = None
+    password: str | None = None
+    user_type: UserTypeEnum | None = None
 
 
 class UserInLogin(BaseSchemaModel):
@@ -27,6 +32,7 @@ class UserWithToken(BaseSchemaModel):
     token: str
     username: str
     email: pydantic.EmailStr
+    user_type: str
     is_verified: bool
     is_active: bool
     is_logged_in: bool

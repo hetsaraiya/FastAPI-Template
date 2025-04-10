@@ -1,10 +1,17 @@
 import datetime
+import enum
 
 import sqlalchemy
 from sqlalchemy.orm import Mapped as SQLAlchemyMapped, mapped_column as sqlalchemy_mapped_column
 from sqlalchemy.sql import functions as sqlalchemy_functions
 
 from src.repository.table import Base
+
+
+class UserTypeEnum(str, enum.Enum):
+    FARMER = "FARMER"
+    CONSUMER = "CONSUMER"
+    ADMIN = "ADMIN"
 
 
 class User(Base):  # type: ignore
@@ -20,6 +27,19 @@ class User(Base):  # type: ignore
     is_verified: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, nullable=False, default=False)
     is_active: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, nullable=False, default=False)
     is_logged_in: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, nullable=False, default=False)
+
+    # User Type for RBAC
+    user_type: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(
+        sqlalchemy.String(length=32), 
+        nullable=False, 
+        default=UserTypeEnum.CONSUMER.value
+    )
+
+    # Permissions Fields
+    is_staff: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, default=False)
+    is_superuser: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, default=False)
+    is_active: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, default=True)
+
     created_at: SQLAlchemyMapped[datetime.datetime] = sqlalchemy_mapped_column(
         sqlalchemy.DateTime(timezone=True), nullable=False, server_default=sqlalchemy_functions.now()
     )
@@ -44,3 +64,19 @@ class User(Base):  # type: ignore
 
     def set_hash_salt(self, hash_salt: str) -> None:
         self._hash_salt = hash_salt
+        
+    def has_role(self, role: UserTypeEnum) -> bool:
+        """Check if user has a specific role"""
+        return self.user_type == role.value
+        
+    def is_admin(self) -> bool:
+        """Check if user has admin role"""
+        return self.user_type == UserTypeEnum.ADMIN.value
+        
+    def is_farmer(self) -> bool:
+        """Check if user has farmer role"""
+        return self.user_type == UserTypeEnum.FARMER.value
+        
+    def is_consumer(self) -> bool:
+        """Check if user has consumer role"""
+        return self.user_type == UserTypeEnum.CONSUMER.value

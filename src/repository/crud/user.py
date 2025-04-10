@@ -3,7 +3,7 @@ import typing
 import sqlalchemy
 from sqlalchemy.sql import functions as sqlalchemy_functions
 
-from src.models.db.user import User
+from src.models.db.user import User, UserTypeEnum
 from src.models.schemas.user import UserInCreate, UserInLogin, UserInUpdate
 from src.repository.crud.base import BaseCRUDRepository
 from src.securities.hashing.password import pwd_generator
@@ -14,7 +14,12 @@ from src.utilities.exceptions.password import PasswordDoesNotMatch
 
 class UserCRUDRepository(BaseCRUDRepository):
     async def create_user(self, user_create: UserInCreate) -> User:
-        new_user = User(username=user_create.username, email=user_create.email, is_logged_in=True)
+        new_user = User(
+            username=user_create.username, 
+            email=user_create.email, 
+            is_logged_in=True,
+            user_type=user_create.user_type.value if user_create.user_type else UserTypeEnum.CONSUMER.value
+        )
 
         new_user.set_hash_salt(hash_salt=pwd_generator.generate_salt)
         new_user.set_hashed_password(
@@ -93,6 +98,9 @@ class UserCRUDRepository(BaseCRUDRepository):
 
         if new_user_data["email"]:
             update_stmt = update_stmt.values(email=new_user_data["email"])
+            
+        if new_user_data["user_type"]:
+            update_stmt = update_stmt.values(user_type=new_user_data["user_type"].value)
 
         if new_user_data["password"]:
             update_user.set_hash_salt(hash_salt=pwd_generator.generate_salt)  # type: ignore

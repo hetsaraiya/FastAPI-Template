@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.api.endpoints import router as api_endpoint_router
 from src.config.events import execute_backend_server_event_handler, terminate_backend_server_event_handler
 from src.config.manager import settings
+from src.utilities.exceptions.database import EntityDoesNotExist
+from src.utilities.exceptions.exceptions import *
 
 
 def initialize_backend_application() -> FastAPI:
@@ -17,6 +19,16 @@ def initialize_backend_application() -> FastAPI:
         allow_methods=settings.ALLOWED_METHODS,
         allow_headers=settings.ALLOWED_HEADERS,
     )
+
+    app.add_exception_handler(UserNotFoundException, user_not_found_exception_handler)
+    app.add_exception_handler(UserAlreadyExistsException, user_already_exists_exception_handler)
+    app.add_exception_handler(InvalidCredentialsException, invalid_credentials_exception_handler)
+    app.add_exception_handler(AuthorizationHeaderException, authorization_header_exception_handler)
+    app.add_exception_handler(SecurityException, security_exception_handler)
+    app.add_exception_handler(EntityDoesNotExist, entity_does_not_exist_exception_handler)
+    app.add_exception_handler(EntityAlreadyExists, entity_already_exists_exception_handler)
+    app.add_exception_handler(InternalServerErrorException, internal_server_error_exception_handler)
+    app.add_exception_handler(Exception, general_exception_handler)
 
     app.add_event_handler(
         "startup",

@@ -1,40 +1,36 @@
-# Pull official latest Python Docker image (Pulished with version 3.11.0)
-FROM --platform=linux/amd64 python:latest
+# Use an official Python runtime as a parent image
+FROM --platform=linux/amd64 python:3.12.5
 
-# Set the working directory
+# Set the working directory in the container
 WORKDIR /usr/backend
 
-# Set up Python behaviour
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV VIRTUAL_ENV=/opt/venv
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Switch on virtual environment
-RUN python3 -m venv $VIRTUAL_ENV
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+RUN pip install --upgrade pip
 
-# Set the server port
+# Install Poetry
+RUN pip install --no-cache-dir poetry
+
+# Copy only the dependency definitions first
+COPY pyproject.toml poetry.lock* /usr/backend/
+
+# Install dependencies (no project root installation)
+RUN poetry install --no-root --no-interaction --no-ansi
+
+# Copy the rest of the application code to the container
+COPY . /usr/backend/
+
+RUN ls /usr/backend
+
+# Expose the application port
 EXPOSE 8000
 
-# Install system dependencies
-RUN apt-get update \
-  && apt-get -y install netcat gcc postgresql \
-  && apt-get clean
 
-# Install Python dependencies
-RUN pip install --upgrade pip
-COPY ./requirements.txt ./
-RUN pip3 install -r requirements.txt
-
-# Copy all files
-COPY . .
-
-# Copy entrypoint.sh for auto connection with account_db service
-COPY ./entrypoint.sh .
-RUN chmod +x /usr/backend/entrypoint.sh
-
-# Execute entrypoint.sh
-ENTRYPOINT ["/usr/backend/entrypoint.sh" ]
-
-# Start up the backend server
-CMD uvicorn src.main:backend_app --reload --workers 4 --host 0.0.0.0 --port 8000
+# Command to run Alembic migrations and then start the application
+#poetry run alembic revision --autogenerate -m 'Migration Command' && poetry run alembic upgrade head && poetry run uvicorn main:app --host 0.0.0.0 --port 8000
+CMD ["sh", "-c", "poetry run uvicorn src.main:backend_app --host 0.0.0.0 --port 8000"]

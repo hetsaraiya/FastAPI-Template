@@ -1,7 +1,5 @@
-import contextlib
-import typing
+from typing import AsyncGenerator
 
-import fastapi
 from sqlalchemy.ext.asyncio import (
     async_sessionmaker as sqlalchemy_async_sessionmaker,
     AsyncSession as SQLAlchemyAsyncSession,
@@ -11,11 +9,17 @@ from sqlalchemy.ext.asyncio import (
 from src.repository.database import async_db
 
 
-async def get_async_session() -> typing.AsyncGenerator[SQLAlchemyAsyncSession, None]:
-    try:
-        yield async_db.async_session
-    except Exception as e:
-        print(e)
-        await async_db.async_session.rollback()
-    finally:
-        await async_db.async_session.close()
+from src.utilities.logging.logger import logger
+
+async def get_async_session() -> AsyncGenerator[SQLAlchemyAsyncSession, None]:
+    async_session_factory = async_db.async_session_factory # Get session factory
+    async with async_session_factory() as session:  # Create new session
+        try:
+            logger.info("Opening database session")
+            yield session
+        except Exception as e:
+            logger.error(f"Exception caught: {str(e)}")
+            await session.rollback()
+            raise
+        finally:
+            logger.info("Closing database session")
