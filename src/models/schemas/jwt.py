@@ -1,5 +1,6 @@
 import datetime
 from typing import Optional, Dict, Any, List
+import uuid
 
 import pydantic
 
@@ -14,7 +15,7 @@ class JWTUser(pydantic.BaseModel):
     username: str
     email: pydantic.EmailStr
     user_type: str = "CONSUMER"  # Default to CONSUMER
-    user_id: int
+    user_id: uuid.UUID  # Changed from int to str for UUID
 
 
 class DeviceInfo(pydantic.BaseModel):
@@ -35,6 +36,11 @@ class DeviceInfo(pydantic.BaseModel):
     device_language: Optional[str] = None
     battery_level: Optional[float] = None
     is_rooted: Optional[bool] = None
+    
+    # iOS specific fields
+    device_model: Optional[str] = None  # Specific iOS model identifier (e.g., iPhone12,1)
+    ios_version: Optional[str] = None   # iOS-specific version field
+    is_jailbroken: Optional[bool] = None # Whether the iOS device is jailbroken
     
     # Hardware information
     cpu_info: Optional[str] = None
@@ -72,7 +78,8 @@ class DeviceBlacklistRequest(pydantic.BaseModel):
 
 
 class DeviceResponse(pydantic.BaseModel):
-    device_id: str  # This will actually contain the android_id
+    id: uuid.UUID
+    device_id: uuid.UUID
     device_name: Optional[str] = None
     device_type: Optional[str] = None
     manufacturer: Optional[str] = None
@@ -82,6 +89,15 @@ class DeviceResponse(pydantic.BaseModel):
     is_blacklisted: bool = False
     last_used_at: Optional[int] = None
     created_at: Optional[int] = None
+    
+    # iOS specific fields
+    device_model: Optional[str] = None
+    ios_version: Optional[str] = None
+    is_jailbroken: Optional[bool] = None
+    
+    # Web specific fields
+    browser_name: Optional[str] = None
+    browser_version: Optional[str] = None
 
 
 class JWTResponse(pydantic.BaseModel):

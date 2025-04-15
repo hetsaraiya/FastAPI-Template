@@ -1,17 +1,23 @@
 import datetime
+import uuid
 import sqlalchemy
 from sqlalchemy.orm import Mapped as SQLAlchemyMapped, mapped_column as sqlalchemy_mapped_column, relationship
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from uuid import uuid4
 from sqlalchemy import ForeignKey
 
-from src.repository.table import Base
+from src.repository.table import Base, generate_uuid
 
 class JwtRecord(Base):
     __tablename__ = "jwt_record"
 
-    id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
+    id: SQLAlchemyMapped[uuid.UUID] = sqlalchemy_mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid4
+    )
     jwt: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=1024), nullable=False, unique=True, index=True)
-    user_id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.Integer, nullable=False, index=True)
+    user_id: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(
+        UUID(as_uuid=True), ForeignKey("user.id"), nullable=False, index=True
+    )
     
     # Reference to device - now using android_id
     android_id: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=255), 
@@ -39,5 +45,7 @@ class JwtRecord(Base):
     
     # Relationship with Device model
     device = relationship("Device", back_populates="jwt_records")
+    # Add relationship with User model
+    user = relationship("User", backref="jwt_records")
 
     __mapper_args__ = {"eager_defaults": True}

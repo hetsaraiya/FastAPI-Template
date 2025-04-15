@@ -13,7 +13,7 @@ def execute_backend_server_event_handler(backend_app: FastAPI) -> typing.Any:
         await initialize_db_connection(backend_app=backend_app)
         
         # Start background tasks
-        backend_app.state.token_cleanup_task = asyncio.create_task(start_token_cleanup_task())
+        # backend_app.state.token_cleanup_task = asyncio.create_task(start_token_cleanup_task())
 
     return launch_backend_server_events
 

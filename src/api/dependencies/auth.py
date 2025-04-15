@@ -67,27 +67,43 @@ def parse_user_agent(user_agent: str) -> Dict[str, Any]:
                     result["manufacturer"] = parts[0].capitalize()
                     result["model"] = ' '.join(parts[1:]).capitalize()
         
-        # Detect iOS devices
-        elif 'iPhone' in user_agent:
+        # Detect iOS devices with improved detection
+        elif 'iPhone' in user_agent or 'iPad' in user_agent or 'iPod' in user_agent:
             result["device_type"] = "ios"
             result["os_name"] = "iOS"
             result["manufacturer"] = "Apple"
-            result["model"] = "iPhone"
-            ios_version = re.search(r'OS\s(\d+_\d+(?:_\d+)?)\slike', user_agent)
+            
+            # Determine iOS device model
+            if 'iPhone' in user_agent:
+                # Try to extract iPhone model number if available
+                iphone_model = re.search(r'iPhone(\d+,\d+)', user_agent)
+                if iphone_model:
+                    result["model"] = f"iPhone {iphone_model.group(1)}"
+                else:
+                    result["model"] = "iPhone"
+            elif 'iPad' in user_agent:
+                # Try to extract iPad model if available
+                ipad_model = re.search(r'iPad(\d+,\d+)', user_agent)
+                if ipad_model:
+                    result["model"] = f"iPad {ipad_model.group(1)}"
+                else:
+                    result["model"] = "iPad"
+            elif 'iPod' in user_agent:
+                result["model"] = "iPod Touch"
+            
+            # Extract iOS version with improved pattern matching
+            ios_version = re.search(r'OS\s(\d+[_\.]\d+(?:[_\.]\d+)?)', user_agent)
             if ios_version:
                 result["os_version"] = ios_version.group(1).replace('_', '.')
-        
-        elif 'iPad' in user_agent:
-            result["device_type"] = "ios"
-            result["os_name"] = "iOS"
-            result["manufacturer"] = "Apple"
-            result["model"] = "iPad"
-            ios_version = re.search(r'OS\s(\d+_\d+(?:_\d+)?)\slike', user_agent)
-            if ios_version:
-                result["os_version"] = ios_version.group(1).replace('_', '.')
+                
+            # Handle newer iOS user agent style (CPU OS vs. CPU iPhone OS)
+            if not result["os_version"]:
+                ios_version_alt = re.search(r'Version/(\d+\.\d+(?:\.\d+)?)', user_agent)
+                if ios_version_alt:
+                    result["os_version"] = ios_version_alt.group(1)
     else:
         # Desktop browsers
-        result["device_type"] = "desktop"
+        result["device_type"] = "web"  # Changed from "desktop" to "web" for consistency
         
         # Windows detection
         if 'Windows' in user_agent:
@@ -111,18 +127,26 @@ def parse_user_agent(user_agent: str) -> Dict[str, Any]:
         elif 'Linux' in user_agent and 'Android' not in user_agent:
             result["os_name"] = "Linux"
     
-    # Browser detection
-    if 'Chrome' in user_agent and 'Chromium' not in user_agent and 'Edg' not in user_agent and 'OPR' not in user_agent:
+    # Browser detection with improved information
+    if 'Chrome' in user_agent and 'Chromium' not in user_agent and 'Edg' not in user_agent and 'OPR' not in user_agent and 'CriOS' not in user_agent:
         result["browser_name"] = "Chrome"
         chrome_version = re.search(r'Chrome/([0-9\.]+)', user_agent)
         if chrome_version:
             result["browser_version"] = chrome_version.group(1)
-    elif 'Firefox' in user_agent:
+    elif 'CriOS' in user_agent:  # Chrome on iOS
+        result["browser_name"] = "Chrome"
+        chrome_version = re.search(r'CriOS/([0-9\.]+)', user_agent)
+        if chrome_version:
+            result["browser_version"] = chrome_version.group(1)
+    elif 'Firefox' in user_agent or 'FxiOS' in user_agent:
         result["browser_name"] = "Firefox"
-        firefox_version = re.search(r'Firefox/([0-9\.]+)', user_agent)
+        if 'FxiOS' in user_agent:  # Firefox on iOS
+            firefox_version = re.search(r'FxiOS/([0-9\.]+)', user_agent)
+        else:
+            firefox_version = re.search(r'Firefox/([0-9\.]+)', user_agent)
         if firefox_version:
             result["browser_version"] = firefox_version.group(1)
-    elif 'Safari' in user_agent and 'Chrome' not in user_agent and 'Edg' not in user_agent:
+    elif 'Safari' in user_agent and 'Chrome' not in user_agent and 'Edg' not in user_agent and 'CriOS' not in user_agent and 'FxiOS' not in user_agent:
         result["browser_name"] = "Safari"
         safari_version = re.search(r'Version/([0-9\.]+)', user_agent)
         if safari_version:
@@ -137,7 +161,14 @@ def parse_user_agent(user_agent: str) -> Dict[str, Any]:
         opera_version = re.search(r'OPR/([0-9\.]+)', user_agent)
         if opera_version:
             result["browser_version"] = opera_version.group(1)
-    
+    elif 'MSIE' in user_agent or 'Trident/' in user_agent:
+        result["browser_name"] = "Internet Explorer"
+        ie_version = re.search(r'MSIE\s([0-9\.]+)', user_agent)
+        if ie_version:
+            result["browser_version"] = ie_version.group(1)
+        elif 'Trident/' in user_agent:  # IE 11
+            result["browser_version"] = "11.0"
+            
     return result
 
 
@@ -174,7 +205,7 @@ def get_device_info(request: Request, device_id: Optional[str] = None, client_da
     
     # Create device hash for fingerprinting
     device_hash = generate_device_hash(request, user_agent, device_id)
-    
+    logger.debug(f"Generated device hash: {device_hash}")
     # Determine device name based on available information
     if ua_info.get("model") and ua_info.get("manufacturer"):
         device_name = f"{ua_info['manufacturer']} {ua_info['model']}"

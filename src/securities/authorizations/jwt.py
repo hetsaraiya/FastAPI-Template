@@ -26,6 +26,12 @@ class JWTGenerator:
         subject: str = None,
     ) -> str:
         to_encode = jwt_data.copy()
+        for key, value in jwt_data.items():
+            if isinstance(value, uuid.UUID):
+                to_encode[key] = str(value)
+            else:
+                to_encode[key] = value
+
 
         if expires_delta:
             expire = datetime.datetime.utcnow() + expires_delta
@@ -39,12 +45,11 @@ class JWTGenerator:
         # Use provided subject or default
         if not subject:
             subject = settings.JWT_SUBJECT
-
         to_encode.update(JWToken(exp=expire, sub=subject, jti=jti).dict())
 
         return jose_jwt.encode(to_encode, key=settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
-    def generate_access_token(self, user: User, device_info: DeviceInfo) -> Tuple[str, int, str]:
+    def generate_access_token(self, user: User, device_info: DeviceInfo) -> Tuple[str, int, uuid.UUID]:
         """
         Generate an access token with device information
         Returns the token, expiration time in seconds, and the device ID
@@ -90,7 +95,7 @@ class JWTGenerator:
 
         return token, expiration_seconds, device_info.android_id
         
-    def generate_refresh_token(self, user: User, device_info: DeviceInfo) -> Tuple[str, int, str]:
+    def generate_refresh_token(self, user: User, device_info: DeviceInfo) -> Tuple[str, int, uuid.UUID]:
         """
         Generate a refresh token with device information
         Returns the token, expiration time in seconds, and the device ID

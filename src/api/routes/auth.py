@@ -3,75 +3,32 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from pydantic import BaseModel, EmailStr
 
 from src.api.dependencies.repository import get_repository
-from src.api.dependencies.auth import get_client_ip, get_device_info, verify_token, oauth2_scheme
+from src.api.dependencies.auth import (
+    get_client_ip,
+    get_device_info,
+    verify_token,
+    oauth2_scheme
+)
 from src.models.schemas.jwt import DeviceInfo, JWTResponse
+from src.models.schemas.auth import (
+    LoginRequest,
+    RegisterRequest,
+    DeviceListResponse,
+    DeviceDetailResponse,
+    UpdateDeviceInfoRequest,
+    ActivityResponse
+)
 from src.repository.crud.user import UserCRUDRepository
 from src.repository.crud.jwt import JwtRecordCRUDRepository
 from src.securities.authorizations.jwt import jwt_generator
 from src.config.manager import settings
 from src.utilities.exceptions.database import EntityAlreadyExists
-from src.utilities.exceptions.exceptions import AuthorizationHeaderException, SecurityException
+from src.utilities.exceptions.exceptions import SecurityException
 from src.utilities.logging.logger import logger
 from src.models.schemas.user import UserInLogin, UserInCreate
 from src.models.db.user import UserTypeEnum
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
-
-
-class LoginRequest(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
-    device_id: Optional[str] = None
-    client_data: Optional[Dict[str, Any]] = None
-
-
-class RegisterRequest(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
-    phone: str
-    role: str
-    device_id: Optional[str] = None
-    client_data: Optional[Dict[str, Any]] = None
-
-
-class DeviceListResponse(BaseModel):
-    devices: List[Dict[str, Any]]
-
-
-class DeviceDetailResponse(BaseModel):
-    device_id: str
-    device_name: str
-    device_type: str
-    manufacturer: Optional[str] = None
-    model: Optional[str] = None
-    os_version: Optional[str] = None
-    ip_address: Optional[str] = None
-    last_login: int
-    last_active: int
-    is_current: bool
-    hardware_info: Optional[Dict[str, Any]] = None
-    location_info: Optional[Dict[str, Any]] = None
-    android_info: Optional[Dict[str, Any]] = None
-    client_data: Dict[str, Any] = {}
-
-
-class UpdateDeviceInfoRequest(BaseModel):
-    device_id: str
-    battery_level: Optional[float] = None
-    network_type: Optional[str] = None
-    available_memory: Optional[str] = None
-    available_storage: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    client_data: Optional[Dict[str, Any]] = None
-
-
-class ActivityResponse(BaseModel):
-    recent_activity: List[Dict[str, Any]]
-    suspicious_activity: List[Dict[str, Any]]
-
 
 @router.post("/register", response_model=JWTResponse)
 async def register(
@@ -110,6 +67,7 @@ async def register(
         # Assuming you might want to add a way to store this in future
         
         # Get device info from request and client data
+        print("Register data:", register_data)
         device_info = get_device_info(request, register_data.device_id, register_data.client_data)
         
         # Calculate token expiration time
@@ -178,7 +136,6 @@ async def login(
         # Authenticate user
         user_login = UserInLogin(
             username=login_data.username,
-            email=login_data.email,
             password=login_data.password
         )
         user = await user_repo.read_user_by_password_authentication(user_login=user_login)

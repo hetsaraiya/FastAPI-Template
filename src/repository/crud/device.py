@@ -81,6 +81,7 @@ class DeviceCRUDRepository(BaseCRUDRepository):
                     device_type=device_info.device_type,
                     ip_address=device_info.ip_address,
                     user_agent=device_info.user_agent,
+                    # Android-specific fields
                     manufacturer=device_info.manufacturer,
                     model=device_info.model,
                     os_version=device_info.os_version,
@@ -90,11 +91,20 @@ class DeviceCRUDRepository(BaseCRUDRepository):
                     device_language=device_info.device_language,
                     battery_level=device_info.battery_level,
                     is_rooted=device_info.is_rooted,
+                    # iOS-specific fields
+                    device_model=device_info.device_model,
+                    ios_version=device_info.ios_version,
+                    is_jailbroken=device_info.is_jailbroken,
+                    # Web browser fields
+                    browser_name=device_info.browser_name,
+                    browser_version=device_info.browser_version,
+                    # Hardware info
                     cpu_info=device_info.cpu_info,
                     total_memory=device_info.total_memory,
                     available_memory=device_info.available_memory,
                     total_storage=device_info.total_storage,
                     available_storage=device_info.available_storage,
+                    # Location data
                     country_code=device_info.country_code,
                     region=device_info.region,
                     city=device_info.city,
@@ -150,6 +160,22 @@ class DeviceCRUDRepository(BaseCRUDRepository):
             device.battery_level = device_info.battery_level
         if device_info.is_rooted is not None:
             device.is_rooted = device_info.is_rooted
+            
+        # iOS-specific fields
+        if device_info.device_model is not None:
+            device.device_model = device_info.device_model
+        if device_info.ios_version is not None:
+            device.ios_version = device_info.ios_version
+        if device_info.is_jailbroken is not None:
+            device.is_jailbroken = device_info.is_jailbroken
+            
+        # Web browser fields
+        if device_info.browser_name is not None:
+            device.browser_name = device_info.browser_name
+        if device_info.browser_version is not None:
+            device.browser_version = device_info.browser_version
+            
+        # Hardware info
         if device_info.cpu_info is not None:
             device.cpu_info = device_info.cpu_info
         if device_info.total_memory is not None:
@@ -160,6 +186,8 @@ class DeviceCRUDRepository(BaseCRUDRepository):
             device.total_storage = device_info.total_storage
         if device_info.available_storage is not None:
             device.available_storage = device_info.available_storage
+            
+        # Location info
         if device_info.country_code is not None:
             device.country_code = device_info.country_code
         if device_info.region is not None:
@@ -177,12 +205,11 @@ class DeviceCRUDRepository(BaseCRUDRepository):
         if device_info.client_data:
             if not device.client_data:
                 device.client_data = {}
+                
         # Update last_used_at timestamp
         stmt = sqlalchemy.text("SELECT EXTRACT(EPOCH FROM NOW())")
         result = await self.async_session.execute(stmt)
         device.last_used_at = int(result.scalar())
-        
-        await self.async_session.commit()
         
         await self.async_session.commit()
         await self.async_session.refresh(device)

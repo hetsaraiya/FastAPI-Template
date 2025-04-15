@@ -1,16 +1,20 @@
 import datetime
+import uuid
 import sqlalchemy
 from sqlalchemy.orm import Mapped as SQLAlchemyMapped, mapped_column as sqlalchemy_mapped_column, relationship
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from uuid import uuid4
 
-from src.repository.table import Base
+from src.repository.table import Base, generate_uuid
 
 
 class Device(Base):
     __tablename__ = "device"
 
-    id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
-    
+    id: SQLAlchemyMapped[uuid.UUID] = sqlalchemy_mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid4
+    )
+
     # Unique identifiers - android_id is now the key unique identifier
     android_id: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=255), nullable=False, unique=True, index=True)
     device_id: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=255), nullable=True, index=True)
@@ -32,6 +36,15 @@ class Device(Base):
     device_language: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=20), nullable=True)
     battery_level: SQLAlchemyMapped[float] = sqlalchemy_mapped_column(sqlalchemy.Float, nullable=True)
     is_rooted: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, nullable=True)
+    
+    # iOS specific fields
+    device_model: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=50), nullable=True)  # e.g., iPhone12,1
+    ios_version: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=20), nullable=True)  # iOS version
+    is_jailbroken: SQLAlchemyMapped[bool] = sqlalchemy_mapped_column(sqlalchemy.Boolean, nullable=True)
+    
+    # Web browser specific fields
+    browser_name: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=50), nullable=True)
+    browser_version: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=20), nullable=True)
     
     # Hardware information
     cpu_info: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(sqlalchemy.String(length=255), nullable=True)

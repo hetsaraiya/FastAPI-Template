@@ -1,5 +1,6 @@
 import datetime
 import enum
+import uuid
 from typing import Optional
 
 import pydantic
@@ -24,7 +25,6 @@ class UserInUpdate(BaseSchemaModel):
 
 class UserInLogin(BaseSchemaModel):
     username: str
-    email: pydantic.EmailStr
     password: str
 
 
@@ -41,5 +41,5 @@ class UserWithToken(BaseSchemaModel):
 
 
 class UserInResponse(BaseSchemaModel):
-    id: int
+    id: uuid.UUID
     authorized_user: UserWithToken

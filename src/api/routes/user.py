@@ -1,3 +1,4 @@
+import uuid
 from fastapi import APIRouter, Depends, status, Request, HTTPException
 import pydantic
 
@@ -107,7 +108,7 @@ async def get_users(
     status_code=status.HTTP_200_OK,
 )
 async def get_user(
-    id: int,
+    id: uuid.UUID,
     user_repo: UserCRUDRepository = Depends(get_repository(repo_type=UserCRUDRepository)),
 ) -> UserInResponse:
     try:
@@ -140,7 +141,7 @@ async def get_user(
     status_code=status.HTTP_200_OK,
 )
 async def update_user(
-    query_id: int,
+    query_id: uuid.UUID,
     update_username: str | None = None,
     update_email: pydantic.EmailStr | None = None,
     update_password: str | None = None,
@@ -179,7 +180,7 @@ async def update_user(
 
 @router.delete(path="", name="users:delete-user-by-id", status_code=status.HTTP_200_OK)
 async def delete_user(
-    id: int, user_repo: UserCRUDRepository = Depends(get_repository(repo_type=UserCRUDRepository))
+    id: uuid.UUID, user_repo: UserCRUDRepository = Depends(get_repository(repo_type=UserCRUDRepository))
 ) -> dict[str, str]:
     try:
         deletion_result = await user_repo.delete_user_by_id(id=id)

@@ -1,11 +1,14 @@
 import datetime
 import enum
+import uuid
 
 import sqlalchemy
 from sqlalchemy.orm import Mapped as SQLAlchemyMapped, mapped_column as sqlalchemy_mapped_column
 from sqlalchemy.sql import functions as sqlalchemy_functions
+from sqlalchemy.dialects.postgresql import UUID
+from uuid import uuid4
 
-from src.repository.table import Base
+from src.repository.table import Base, generate_uuid
 
 
 class UserTypeEnum(str, enum.Enum):
@@ -17,7 +20,9 @@ class UserTypeEnum(str, enum.Enum):
 class User(Base):  # type: ignore
     __tablename__ = "user"
 
-    id: SQLAlchemyMapped[int] = sqlalchemy_mapped_column(primary_key=True, autoincrement="auto")
+    id: SQLAlchemyMapped[uuid.UUID] = sqlalchemy_mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid4
+    )
     username: SQLAlchemyMapped[str] = sqlalchemy_mapped_column(
         sqlalchemy.String(length=64), nullable=False, unique=True
     )

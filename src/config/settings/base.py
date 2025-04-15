@@ -130,6 +130,19 @@ class BackendBaseSettings(BaseSettings):
     HASHING_SALT: str = config("HASHING_SALT", cast=str)
     JWT_ALGORITHM: str = config("JWT_ALGORITHM", cast=str)
 
+    # Redis settings
+    REDIS_HOST: str = config("REDIS_HOST", cast=str, default="localhost")
+    REDIS_PORT: int = config("REDIS_PORT", cast=int, default=6379)
+    REDIS_DB: int = config("REDIS_DB", cast=int, default=0)
+
+    # Email settings
+    EMAIL_SENDER: str = config("EMAIL_SENDER", cast=str, default="noreply@yourdomain.com")
+    SMTP_SERVER: str = config("SMTP_SERVER", cast=str, default="smtp.gmail.com")
+    SMTP_PORT: int = config("SMTP_PORT", cast=int, default=587)
+    SMTP_TLS: bool = config("SMTP_TLS", cast=bool, default=True)
+    EMAIL_USERNAME: str = config("EMAIL_USERNAME", cast=str, default="")
+    EMAIL_PASSWORD: str = config("EMAIL_PASSWORD", cast=str, default="")
+
     class Config:
         case_sensitive: bool = True
         validate_assignment: bool = True

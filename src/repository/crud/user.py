@@ -68,7 +68,7 @@ class UserCRUDRepository(BaseCRUDRepository):
 
     async def read_user_by_password_authentication(self, user_login: UserInLogin) -> User:
         stmt = sqlalchemy.select(User).where(
-            User.username == user_login.username, User.email == user_login.email
+            User.username == user_login.username
         )
         query = await self.async_session.execute(statement=stmt)
         db_user = query.scalar()
